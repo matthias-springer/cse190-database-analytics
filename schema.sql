@@ -66,6 +66,19 @@ FROM (SELECT members.nation AS nation, viewed.reader AS reader, COUNT(*) AS cnt
 		GROUP BY members.nation) AS denominator
 WHERE numerator.nation = denominator.nation);	
 
+-- FIXED
+CREATE MATERIALIZED VIEW mv_nrv AS (SELECT (numerator.cnt / denominator.cnt) AS ratio, numerator.nation, numerator.reader
+FROM (SELECT members.nation AS nation, viewed.reader AS reader, COUNT(*) AS cnt
+		FROM posts, viewed, members
+		WHERE posts.id = viewed.post AND members.id = posts.author
+		GROUP BY members.nation, viewed.reader) AS numerator,
+	(SELECT m1.id as member, m2.nation AS nation, COUNT(*) AS cnt
+		FROM posts, members m1, members m2, friends
+		WHERE m1.id = friends.x AND m2.id = friends.y
+		GROUP BY m2.nation, m1.id) AS denominator
+WHERE numerator.nation = denominator.nation);
+
+
 CREATE INDEX ON mv_nrv (reader);
 
 SELECT nation AS n, ratio AS r, reader AS v
