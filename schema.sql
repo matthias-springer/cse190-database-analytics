@@ -55,16 +55,16 @@ FROM mv_arv
 WHERE reader = 123;
 
 -- QUERY 2
-CREATE MATERIALIZED VIEW mv_nrv AS (SELECT (numerator.cnt / denominator.cnt) AS ratio, numerator.nation, numerator.reader
-FROM (SELECT members.nation AS nation, viewed.reader AS reader, COUNT(*) AS cnt
-		FROM posts, viewed, members
-		WHERE posts.id = viewed.post AND members.id = posts.author
-		GROUP BY members.nation, viewed.reader) AS numerator,
-	(SELECT members.nation AS nation, COUNT(*) AS cnt
-		FROM posts, members
-		WHERE members.id = posts.author
-		GROUP BY members.nation) AS denominator
-WHERE numerator.nation = denominator.nation);	
+--CREATE MATERIALIZED VIEW mv_nrv AS (SELECT (numerator.cnt / denominator.cnt) AS ratio, numerator.nation, numerator.reader
+--FROM (SELECT members.nation AS nation, viewed.reader AS reader, COUNT(*) AS cnt
+--		FROM posts, viewed, members
+--		WHERE posts.id = viewed.post AND members.id = posts.author
+--		GROUP BY members.nation, viewed.reader) AS numerator,
+--	(SELECT members.nation AS nation, COUNT(*) AS cnt
+--		FROM posts, members
+--		WHERE members.id = posts.author
+--		GROUP BY members.nation) AS denominator
+--WHERE numerator.nation = denominator.nation);	
 
 -- FIXED
 CREATE MATERIALIZED VIEW mv_nrv AS (SELECT (numerator.cnt / denominator.cnt) AS ratio, numerator.nation, numerator.reader
@@ -126,3 +126,8 @@ CREATE TRIGGER insert_view
 AFTER INSERT ON viewed
 FOR EACH ROW
 EXECUTE PROCEDURE f_insert_view();
+
+SELECT random() * 99 + 1 FROM generate_series(1,5);
+
+
+-- WORKLOAD
