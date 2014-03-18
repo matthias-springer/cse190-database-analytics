@@ -22,11 +22,21 @@ $f_insert_view$
 	DECLARE
 		num_posts_nation		INTEGER;
 		view_nation				VARCHAR(255);
+		num_posts				INTEGER;
+		author_index			INTEGER;
 	BEGIN
 		-- Query 1
-		UPDATE ivm_arv
-			SET numerator = numerator + 1
-			WHERE reader = NEW.reader AND author = (SELECT posts.author FROM posts WHERE posts.id = NEW.post);
+		author_index := (SELECT posts.author FROM posts WHERE posts.id = NEW.post);
+		
+		IF EXISTS (SELECT * FROM ivm_arv WHERE reader = NEW.reader AND author = author_index) THEN
+			UPDATE ivm_arv
+				SET numerator = numerator + 1
+				WHERE reader = NEW.reader AND author = author_index;
+		ELSE
+			num_posts := (SELECT COUNT(*) FROM posts WHERE author = author_index);
+			INSERT INTO ivm_arv
+				VALUES (author_index, NEW.reader, 1, num_posts);
+		END IF;
 		
 		-- Query 2
 		IF EXISTS (SELECT * FROM ivm_nrv, posts, members WHERE ivm_nrv.reader = NEW.reader AND ivm_nrv.nation = members.nation AND members.id = posts.author AND new.post = posts.id) THEN
@@ -47,9 +57,6 @@ $f_insert_view$
 $f_insert_view$
 LANGUAGE plpgsql;
 
---CREATE INDEX ON posts (id);
---CREATE INDEX ON members (id);
-
 CREATE TRIGGER insert_view 
 AFTER INSERT ON viewed
 FOR EACH ROW
@@ -67,12 +74,13 @@ $f_insert_friends$
 	BEGIN
 		-- TODO: try creating materialized view for number of posts per member; tried it, makes it slower
 		-- Query 1
+		
 		num_posts := (SELECT COUNT(*) FROM posts WHERE author = NEW.x);
 		
-		IF num_posts > 0 THEN
-			INSERT INTO ivm_arv 
-				VALUES (NEW.x, NEW.y, 0, num_posts);
-		END IF;
+		--IF num_posts > 0 THEN
+		--	INSERT INTO ivm_arv 
+		--		VALUES (NEW.x, NEW.y, 0, num_posts);
+		--END IF;
 		
 		
 		-- Query 2
@@ -103,14 +111,14 @@ $f_insert_posts$
 		author_nation			VARCHAR(255);
 		friend_id				INTEGER;
 	BEGIN
-		IF EXISTS (SELECT * FROM ivm_arv WHERE author = NEW.author) THEN
+--		IF EXISTS (SELECT * FROM ivm_arv WHERE author = NEW.author) THEN
 			UPDATE ivm_arv
 				SET denominator = denominator + 1
 				WHERE author = NEW.author;
-		ELSE
-			INSERT INTO ivm_arv
-				(SELECT NEW.author, friends.y, 0, 1 FROM friends WHERE friends.x = NEW.author);
-		END IF;
+--		ELSE
+--			INSERT INTO ivm_arv
+--				(SELECT NEW.author, friends.y, 0, 1 FROM friends WHERE friends.x = NEW.author);
+--		END IF;
 		
 		
 		-- Query 2
